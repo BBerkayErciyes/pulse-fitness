@@ -29,9 +29,9 @@ END $$;
 
 UPDATE public.users SET role = 'admin' WHERE id = '00000000-0000-0000-0000-00000000000c';
 
-INSERT INTO public.subscriptions (user_id, plan_id, current_period_start, current_period_end) VALUES
-  ('00000000-0000-0000-0000-00000000000a', 'plan_basic', now(), now() + interval '1 month'),
-  ('00000000-0000-0000-0000-00000000000b', 'plan_basic', now(), now() + interval '1 month');
+INSERT INTO public.subscriptions (user_id, stripe_subscription_id, plan_id, current_period_start, current_period_end) VALUES
+  ('00000000-0000-0000-0000-00000000000a', 'sub_test_a', 'plan_basic', now(), now() + interval '1 month'),
+  ('00000000-0000-0000-0000-00000000000b', 'sub_test_b', 'plan_basic', now(), now() + interval '1 month');
 
 -- ---- As Alice (member) ----
 SET LOCAL ROLE authenticated;

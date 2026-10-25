@@ -19,7 +19,8 @@ export const subscriptions = pgTable(
     userId: uuid("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
-    // Payment-provider price/plan identifier (e.g. Stripe price id).
+    stripeSubscriptionId: text("stripe_subscription_id").notNull().unique(),
+    // Stripe price id of the subscription's (first) item.
     planId: text("plan_id").notNull(),
     status: subscriptionStatus("status").notNull().default("active"),
     currentPeriodStart: timestamp("current_period_start", { withTimezone: true }).notNull(),
