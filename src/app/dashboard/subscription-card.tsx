@@ -1,11 +1,11 @@
 import { AlertTriangle, ArrowRight, CalendarDays, CreditCard } from "lucide-react";
 import Link from "next/link";
+import { StatusBadge } from "@/components/status-badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import type { DashboardSubscription, PlanInfo } from "@/lib/subscriptions/dashboard";
 import { cn } from "@/lib/utils";
 import { ManageBillingButton } from "./manage-billing-button";
-import { StatusBadge } from "./status-badge";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 

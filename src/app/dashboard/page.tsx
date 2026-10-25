@@ -1,4 +1,4 @@
-import { ArrowRight, Info, LogOut, PartyPopper, ShieldCheck } from "lucide-react";
+import { ArrowRight, Info, LogOut, PartyPopper, Settings, ShieldCheck } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -96,11 +96,18 @@ async function MemberDashboard({ searchParams }: Pick<PageProps<"/dashboard">, "
         </div>
       )}
 
-      <section>
-        <p className="text-sm text-muted-foreground">{greeting(now)},</p>
-        <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">
-          {profile?.firstName || "Üye"} 👋
-        </h1>
+      <section className="flex items-end justify-between gap-4">
+        <div>
+          <p className="text-sm text-muted-foreground">{greeting(now)},</p>
+          <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">
+            {profile?.firstName || "Üye"} 👋
+          </h1>
+        </div>
+        {profile?.role === "admin" && (
+          <Link href="/admin" className={buttonVariants({ variant: "outline", size: "sm" })}>
+            <Settings /> Yönetim paneli
+          </Link>
+        )}
       </section>
 
       <div className="grid gap-6 md:grid-cols-5">

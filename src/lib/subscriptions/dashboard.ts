@@ -54,7 +54,7 @@ export async function getMemberDashboard(userId: string) {
   const db = getDb();
 
   const [profile] = await db
-    .select({ firstName: users.firstName, lastName: users.lastName })
+    .select({ firstName: users.firstName, lastName: users.lastName, role: users.role })
     .from(users)
     .where(eq(users.id, userId));
 

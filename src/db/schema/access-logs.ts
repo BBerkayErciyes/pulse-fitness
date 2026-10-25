@@ -17,6 +17,8 @@ export const accessLogs = pgTable(
   },
   (t) => [
     index("access_logs_user_id_created_at_idx").on(t.userId, t.createdAt),
+    // Admin gate history lists every scan newest-first.
+    index("access_logs_created_at_idx").on(t.createdAt),
     uniqueIndex("access_logs_token_id_granted_idx")
       .on(t.tokenId)
       .where(sql`${t.granted}`),

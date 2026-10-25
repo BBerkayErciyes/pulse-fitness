@@ -17,3 +17,15 @@ export const ACCESS_REASON_LABELS: Record<string, string> = {
   token_already_used: "Bu QR kod daha önce kullanıldı.",
   invalid_token: "Geçersiz QR kod.",
 };
+
+// Staff-facing wording for the same reasons (admin gate history).
+export const ADMIN_ACCESS_REASON_LABELS: Record<string, string> = {
+  no_subscription: "Üyelik yok",
+  subscription_past_due: "Ödeme gecikmiş",
+  subscription_paused: "Üyelik dondurulmuş",
+  subscription_canceled: "Üyelik iptal",
+  user_not_found: "Üye bulunamadı",
+  token_expired: "QR süresi dolmuş",
+  token_already_used: "QR tekrar kullanıldı",
+  invalid_token: "Geçersiz QR",
+};

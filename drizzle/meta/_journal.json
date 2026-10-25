@@ -36,6 +36,20 @@
       "when": 1792952416633,
       "tag": "0004_access_logs_rls",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1792963931767,
+      "tag": "0005_admin_access_logs_index",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1792963936455,
+      "tag": "0006_admin_role_guard",
+      "breakpoints": true
     }
   ]
 }

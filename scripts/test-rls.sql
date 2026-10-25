@@ -33,6 +33,14 @@ INSERT INTO public.subscriptions (user_id, stripe_subscription_id, plan_id, curr
   ('00000000-0000-0000-0000-00000000000a', 'sub_test_a', 'plan_basic', now(), now() + interval '1 month'),
   ('00000000-0000-0000-0000-00000000000b', 'sub_test_b', 'plan_basic', now(), now() + interval '1 month');
 
+INSERT INTO public.access_logs (user_id, granted, reason) VALUES
+  ('00000000-0000-0000-0000-00000000000a', true, null),
+  ('00000000-0000-0000-0000-00000000000b', false, 'no_subscription');
+
+-- Simulate a future over-broad grant: the role guard trigger must still refuse.
+-- (Rolled back with everything else.)
+GRANT UPDATE (role) ON public.users TO authenticated;
+
 -- ---- As Alice (member) ----
 SET LOCAL ROLE authenticated;
 SELECT set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-00000000000a","role":"authenticated"}', true);
@@ -57,9 +65,16 @@ BEGIN
 
   BEGIN
     UPDATE public.users SET role = 'admin' WHERE id = '00000000-0000-0000-0000-00000000000a';
-    RAISE EXCEPTION 'member escalated own role';
+    RAISE EXCEPTION 'member escalated own role (role guard trigger missing?)';
   EXCEPTION WHEN insufficient_privilege THEN NULL;
   END;
+
+  IF (SELECT public.is_admin()) THEN
+    RAISE EXCEPTION 'is_admin() true for a member';
+  END IF;
+  IF (SELECT count(*) FROM public.access_logs) <> 1 THEN
+    RAISE EXCEPTION 'member sees other access logs';
+  END IF;
 
   BEGIN
     UPDATE public.subscriptions SET status = 'active', current_period_end = now() + interval '10 years';
@@ -84,6 +99,12 @@ BEGIN
   END IF;
   IF (SELECT count(*) FROM public.subscriptions WHERE user_id::text LIKE '00000000-0000-0000-0000-00000000000_') <> 2 THEN
     RAISE EXCEPTION 'admin cannot see all subscriptions';
+  END IF;
+  IF NOT (SELECT public.is_admin()) THEN
+    RAISE EXCEPTION 'is_admin() false for an admin';
+  END IF;
+  IF (SELECT count(*) FROM public.access_logs WHERE user_id::text LIKE '00000000-0000-0000-0000-00000000000_') <> 2 THEN
+    RAISE EXCEPTION 'admin cannot see all access logs';
   END IF;
 END $$;
 
