@@ -1,5 +1,5 @@
 import { checkAccessEligibility } from "@/lib/access/eligibility";
-import { issueAccessToken } from "@/lib/access/token";
+import { ACCESS_TOKEN_TTL_SECONDS, issueAccessToken } from "@/lib/access/token";
 import { getAuthenticatedUserId } from "@/lib/supabase/server";
 
 const NO_STORE = { "Cache-Control": "no-store" };
@@ -16,6 +16,10 @@ export async function POST(request: Request) {
   }
 
   const { token, expiresAt } = await issueAccessToken(userId);
-  // The client renders `token` as the QR code and requests a new one before expiry.
-  return Response.json({ token, expiresAt: expiresAt.toISOString() }, { headers: NO_STORE });
+  // The client renders `token` as the QR code. `expiresIn` lets it run the
+  // countdown without depending on the device clock matching the server's.
+  return Response.json(
+    { token, expiresAt: expiresAt.toISOString(), expiresIn: ACCESS_TOKEN_TTL_SECONDS },
+    { headers: NO_STORE },
+  );
 }

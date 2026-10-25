@@ -133,8 +133,15 @@ try {
   const logs = await sql`select granted, reason from access_logs where user_id = ${userId} or gate_id = ${GATE_ID}`;
   console.log(`\naccess_logs written: ${logs.length} (${logs.filter((l) => l.granted).length} granted)`);
 } finally {
-  await sql`delete from access_logs where gate_id = ${GATE_ID}`;
-  if (userId) await admin.auth.admin.deleteUser(userId); // cascades users + subscriptions
+  // Each cleanup step is independent so one failure (e.g. DB unreachable)
+  // never leaves the throwaway auth user behind.
+  if (userId) {
+    const { error } = await admin.auth.admin.deleteUser(userId); // cascades users + subscriptions
+    if (error) console.error(`Cleanup: could not delete test user ${email}: ${error.message}`);
+  }
+  await sql`delete from access_logs where gate_id = ${GATE_ID}`.catch((err) =>
+    console.error(`Cleanup: could not delete ${GATE_ID} access logs: ${err.message}`),
+  );
   await sql.end();
 }
 
