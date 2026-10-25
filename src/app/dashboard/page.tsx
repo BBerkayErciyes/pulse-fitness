@@ -1,7 +1,8 @@
-import { ArrowRight, Info, LogOut, PartyPopper, Settings, ShieldCheck } from "lucide-react";
+import { ArrowRight, Info, LogOut, PartyPopper, Settings, ShieldCheck, UserRound } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { connection } from "next/server";
 import { Suspense } from "react";
 import { BrandLogo } from "@/components/brand-logo";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -27,11 +28,19 @@ export default function DashboardPage({ searchParams }: PageProps<"/dashboard">)
       <header className="sticky top-0 z-10 border-b bg-background/80 backdrop-blur">
         <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4">
           <BrandLogo />
-          <form action={signOut}>
-            <Button type="submit" variant="ghost" size="sm" className="text-muted-foreground">
-              <LogOut /> Çıkış
-            </Button>
-          </form>
+          <div className="flex items-center gap-1">
+            <Link
+              href="/dashboard/profile"
+              className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "text-muted-foreground")}
+            >
+              <UserRound /> Profil
+            </Link>
+            <form action={signOut}>
+              <Button type="submit" variant="ghost" size="sm" className="text-muted-foreground">
+                <LogOut /> Çıkış
+              </Button>
+            </form>
+          </div>
         </div>
       </header>
 
@@ -57,6 +66,9 @@ const requestTime = () => new Date();
 
 // Not cached on purpose: subscription status must reflect the latest webhook.
 async function MemberDashboard({ searchParams }: Pick<PageProps<"/dashboard">, "searchParams">) {
+  // Per-request by nature; also keeps getClaims()' expiry check and the
+  // greeting clock (Date.now) out of prerendering.
+  await connection();
   const supabase = await createSupabaseServerClient();
   const { data } = await supabase.auth.getClaims();
   const userId = data?.claims.sub;

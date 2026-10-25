@@ -7,6 +7,7 @@ import type { AdminMemberRow } from "@/lib/admin/queries";
 import { getPlanInfo } from "@/lib/subscriptions/dashboard";
 import { cn } from "@/lib/utils";
 import { formatDate, formatDateTime, fullName } from "./format";
+import { MemberActions } from "./member-actions";
 
 export async function MembersTable({ rows }: { rows: AdminMemberRow[] }) {
   if (rows.length === 0) {
@@ -19,7 +20,7 @@ export async function MembersTable({ rows }: { rows: AdminMemberRow[] }) {
 
   return (
     <div className="-mx-4 overflow-x-auto px-4">
-      <table className="w-full min-w-[56rem] text-left text-sm">
+      <table className="w-full min-w-[64rem] text-left text-sm">
         <thead className="border-b text-xs text-muted-foreground">
           <tr>
             <th scope="col" className="py-2 pr-4 font-medium">Üye</th>
@@ -71,14 +72,23 @@ export async function MembersTable({ rows }: { rows: AdminMemberRow[] }) {
                 )}
               </td>
               <td className="py-3 pr-4 tabular-nums text-muted-foreground">{formatDate(m.joinedAt)}</td>
-              <td className="py-3 text-right">
-                <Link
-                  href={`/admin/access-logs?member=${m.id}`}
-                  className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "text-muted-foreground")}
-                  title="Geçiş geçmişi"
-                >
-                  <History /> <span className="sr-only lg:not-sr-only">Geçişler</span>
-                </Link>
+              <td className="py-3">
+                <div className="flex items-start justify-end gap-1">
+                  {m.subscriptionId && m.status && m.status !== "canceled" && (
+                    <MemberActions
+                      subscriptionId={m.subscriptionId}
+                      memberName={fullName(m.firstName, m.lastName)}
+                      cancelAtPeriodEnd={m.cancelAtPeriodEnd ?? false}
+                    />
+                  )}
+                  <Link
+                    href={`/admin/access-logs?member=${m.id}`}
+                    className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "text-muted-foreground")}
+                    title="Geçiş geçmişi"
+                  >
+                    <History /> <span className="sr-only lg:not-sr-only">Geçişler</span>
+                  </Link>
+                </div>
               </td>
             </tr>
           ))}

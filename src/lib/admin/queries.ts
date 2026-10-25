@@ -40,6 +40,7 @@ const startOfToday = sql`(date_trunc('day', now() AT TIME ZONE 'Europe/Istanbul'
 function currentSubscriptions() {
   return getDb()
     .selectDistinctOn([subscriptions.userId], {
+      id: subscriptions.id,
       userId: subscriptions.userId,
       status: subscriptions.status,
       planId: subscriptions.planId,
@@ -119,6 +120,7 @@ export async function listMembers({
       phone: users.phone,
       role: users.role,
       joinedAt: users.createdAt,
+      subscriptionId: current.id,
       status: current.status,
       planId: current.planId,
       currentPeriodEnd: current.currentPeriodEnd,
