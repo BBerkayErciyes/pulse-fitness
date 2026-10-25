@@ -1,5 +1,6 @@
 import { and, eq, ne } from "drizzle-orm";
 import { getDb } from "@/db";
+import { appUrl } from "@/lib/app-url";
 import { subscriptions, users } from "@/db/schema";
 import { buildCheckoutSessionParams } from "@/lib/billing/checkout";
 import { isPlanKey, priceIdFor } from "@/lib/billing/plans";
@@ -7,12 +8,6 @@ import { getStripe } from "@/lib/stripe";
 import { getAuthenticatedUser } from "@/lib/supabase/server";
 
 const NO_STORE = { "Cache-Control": "no-store" };
-
-function appUrl(request: Request): string {
-  // Prefer the configured public URL; the request origin can be an internal
-  // host behind a proxy and Stripe would redirect members there.
-  return (process.env.APP_URL ?? new URL(request.url).origin).replace(/\/$/, "");
-}
 
 export async function POST(request: Request) {
   const user = await getAuthenticatedUser(request);

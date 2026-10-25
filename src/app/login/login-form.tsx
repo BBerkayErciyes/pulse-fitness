@@ -11,11 +11,13 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 type Mode = "sign-in" | "sign-up";
 
-export function LoginForm({ next }: { next: string }) {
+export function LoginForm({ next, linkInvalid = false }: { next: string; linkInvalid?: boolean }) {
   const router = useRouter();
   const [mode, setMode] = useState<Mode>("sign-in");
   const [pending, setPending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(
+    linkInvalid ? "Doğrulama bağlantısı geçersiz ya da süresi dolmuş. Giriş yapmayı dene." : null,
+  );
   const [notice, setNotice] = useState<string | null>(null);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
@@ -44,9 +46,12 @@ export function LoginForm({ next }: { next: string }) {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      // Read by the handle_new_user trigger to fill public.users.
       options: {
+        // Read by the handle_new_user trigger to fill public.users.
         data: { first_name: String(form.get("firstName")), last_name: String(form.get("lastName")) },
+        // Used by Supabase's default email template; our template links to
+        // /auth/confirm with a token_hash instead (see supabase/templates).
+        emailRedirectTo: `${window.location.origin}/auth/confirm?next=/dashboard`,
       },
     });
     setPending(false);

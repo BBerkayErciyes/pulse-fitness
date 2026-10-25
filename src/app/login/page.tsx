@@ -13,8 +13,8 @@ function safeNext(value: string | string[] | undefined): string {
 }
 
 async function LoginFormWithRedirect({ searchParams }: Pick<PageProps<"/login">, "searchParams">) {
-  const { next } = await searchParams;
-  return <LoginForm next={safeNext(next)} />;
+  const { next, error } = await searchParams;
+  return <LoginForm next={safeNext(next)} linkInvalid={error === "link_invalid"} />;
 }
 
 export default function LoginPage({ searchParams }: PageProps<"/login">) {

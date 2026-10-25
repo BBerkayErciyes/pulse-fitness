@@ -12,7 +12,8 @@
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
     "db:test-rls": "node scripts/run-sql.mjs scripts/test-rls.sql",
-    "simulate:gate": "node scripts/simulate-gate.mjs"
+    "simulate:gate": "node scripts/simulate-gate.mjs",
+    "auth:configure": "node scripts/configure-supabase-auth.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",

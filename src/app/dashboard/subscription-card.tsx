@@ -4,6 +4,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import type { DashboardSubscription, PlanInfo } from "@/lib/subscriptions/dashboard";
 import { cn } from "@/lib/utils";
+import { ManageBillingButton } from "./manage-billing-button";
 import { StatusBadge } from "./status-badge";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -70,8 +71,8 @@ export function SubscriptionCard({
           <div className="flex gap-3 rounded-lg bg-warning/15 p-3 text-sm">
             <AlertTriangle className="mt-0.5 size-4 shrink-0 text-warning" />
             <p>
-              Son ödemen alınamadı. Salona girişin şimdilik açık; kesinti olmaması için ödeme
-              yöntemini güncelle.
+              Son ödemen alınamadı. Salona girişin şimdilik açık; kesinti olmaması için aşağıdaki
+              &ldquo;Üyeliği Yönet&rdquo; butonundan ödeme yöntemini güncelle.
             </p>
           </div>
         )}
@@ -114,6 +115,15 @@ export function SubscriptionCard({
           <p className="text-sm text-muted-foreground">
             Üyeliğin {formatDate(currentPeriodEnd)} tarihinde sona erecek ve yenilenmeyecek.
           </p>
+        )}
+
+        {isLive && (
+          <div className="border-t pt-4">
+            <ManageBillingButton emphasized={status === "past_due"} />
+            <p className="mt-2 text-xs text-muted-foreground">
+              Kartını güncelle, faturalarını gör veya üyeliğini iptal et.
+            </p>
+          </div>
         )}
       </CardContent>
     </Card>
