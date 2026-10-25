@@ -22,6 +22,20 @@
       "when": 1792951949269,
       "tag": "0002_stripe_ids",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1792952412436,
+      "tag": "0003_access_logs",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792952416633,
+      "tag": "0004_access_logs_rls",
+      "breakpoints": true
     }
   ]
 }

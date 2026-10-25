@@ -11,13 +11,17 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
-    "db:test-rls": "node scripts/run-sql.mjs scripts/test-rls.sql"
+    "db:test-rls": "node scripts/run-sql.mjs scripts/test-rls.sql",
+    "simulate:gate": "node scripts/simulate-gate.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",
+    "@supabase/ssr": "^0.12.7",
+    "@supabase/supabase-js": "^2.118.0",
     "class-variance-authority": "^0.7.1",
     "cn": "^0.5.0",
     "drizzle-orm": "^0.45.4",
+    "jose": "^6.2.13",
     "lucide-react": "^1.61.0",
     "next": "16.4.3",
     "postgres": "^3.4.9",
