@@ -1,16 +1,19 @@
-import { LogOut, ShieldCheck } from "lucide-react";
+import { ArrowRight, Info, LogOut, PartyPopper, ShieldCheck } from "lucide-react";
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { BrandLogo } from "@/components/brand-logo";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getMemberDashboard, getPlanInfo } from "@/lib/subscriptions/dashboard";
 import { hasAccess } from "@/lib/subscriptions/state-machine";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { cn } from "@/lib/utils";
 import { AccessQr } from "./access-qr";
 import { signOut } from "./actions";
+import { AwaitingActivation } from "./checkout-notice";
 import { RecentVisits } from "./recent-visits";
 import { SubscriptionCard } from "./subscription-card";
 
@@ -18,7 +21,7 @@ export const metadata: Metadata = { title: "Üye Paneli" };
 
 // The header is static and prerenders into the shell; everything that reads the
 // session streams in behind <Suspense> (required with cacheComponents).
-export default function DashboardPage() {
+export default function DashboardPage({ searchParams }: PageProps<"/dashboard">) {
   return (
     <div className="flex flex-1 flex-col bg-muted/40">
       <header className="sticky top-0 z-10 border-b bg-background/80 backdrop-blur">
@@ -34,7 +37,7 @@ export default function DashboardPage() {
 
       <main className="mx-auto w-full max-w-5xl flex-1 space-y-6 px-4 py-6 md:py-10">
         <Suspense fallback={<DashboardSkeleton />}>
-          <MemberDashboard />
+          <MemberDashboard searchParams={searchParams} />
         </Suspense>
       </main>
     </div>
@@ -53,19 +56,46 @@ function greeting(now: Date) {
 const requestTime = () => new Date();
 
 // Not cached on purpose: subscription status must reflect the latest webhook.
-async function MemberDashboard() {
+async function MemberDashboard({ searchParams }: Pick<PageProps<"/dashboard">, "searchParams">) {
   const supabase = await createSupabaseServerClient();
   const { data } = await supabase.auth.getClaims();
   const userId = data?.claims.sub;
   if (!userId) redirect("/login?next=/dashboard");
 
-  const { profile, subscription, recentVisits } = await getMemberDashboard(userId);
+  const [{ profile, subscription, recentVisits }, { success, canceled }] = await Promise.all([
+    getMemberDashboard(userId),
+    searchParams,
+  ]);
   const plan = subscription ? await getPlanInfo(subscription.planId) : null;
   const canEnter = subscription !== null && hasAccess(subscription.status);
   const now = requestTime();
 
   return (
     <>
+      {success === "true" &&
+        (canEnter ? (
+          <div role="status" className="flex items-start gap-3 rounded-xl bg-success/15 p-4 text-sm">
+            <PartyPopper className="mt-0.5 size-4 shrink-0 text-success" />
+            <p>
+              <span className="font-medium">Aramıza hoş geldin!</span> Üyeliğin aktif, QR kodunla hemen
+              salona girebilirsin.
+            </p>
+          </div>
+        ) : (
+          <AwaitingActivation />
+        ))}
+      {canceled === "true" && !canEnter && (
+        <div role="status" className="flex items-start gap-3 rounded-xl bg-muted p-4 text-sm">
+          <Info className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+          <p>
+            Ödeme tamamlanmadı, kartından ücret alınmadı.{" "}
+            <Link href="/pricing" className="font-medium text-primary underline-offset-4 hover:underline">
+              Paketlere tekrar göz at
+            </Link>
+          </p>
+        </div>
+      )}
+
       <section>
         <p className="text-sm text-muted-foreground">{greeting(now)},</p>
         <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">
@@ -85,9 +115,16 @@ async function MemberDashboard() {
             {canEnter ? (
               <AccessQr />
             ) : (
-              <p className="rounded-lg bg-muted p-4 text-sm text-muted-foreground">
-                QR kod oluşturmak için aktif bir üyeliğin olmalı.
-              </p>
+              <div className="space-y-4">
+                <p className="rounded-lg bg-muted p-4 text-sm text-muted-foreground">
+                  QR kod oluşturmak için aktif bir üyeliğin olmalı.
+                </p>
+                {subscription?.status !== "paused" && (
+                  <Link href="/pricing" className={cn(buttonVariants({ size: "lg" }), "h-12 w-full text-base")}>
+                    Paketleri incele <ArrowRight />
+                  </Link>
+                )}
+              </div>
             )}
           </CardContent>
         </Card>

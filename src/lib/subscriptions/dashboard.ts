@@ -7,31 +7,44 @@ import { getStripe } from "@/lib/stripe";
 const INTERVAL_LABELS: Record<string, string> = { day: "gün", week: "hafta", month: "ay", year: "yıl" };
 
 export interface PlanInfo {
+  /** False when Stripe could not be reached or the price does not exist. */
+  found: boolean;
   name: string;
+  /** Formatted, e.g. "₺499,00 / ay". */
   price: string | null;
+  /** Minor units (kuruş), for comparisons such as yearly savings. */
+  unitAmount: number | null;
+  currency: string | null;
+  interval: string | null;
+}
+
+export function formatMoney(minorUnits: number, currency: string): string {
+  return new Intl.NumberFormat("tr-TR", { style: "currency", currency: currency.toUpperCase() }).format(
+    minorUnits / 100,
+  );
 }
 
 /**
  * Human-readable plan from the Stripe price id. Falls back to the raw id if
- * Stripe is unreachable or the price does not exist, so the dashboard still renders.
+ * Stripe is unreachable or the price does not exist, so pages still render.
  */
 export const getPlanInfo = cache(async (priceId: string): Promise<PlanInfo> => {
   try {
     const price = await getStripe().prices.retrieve(priceId, { expand: ["product"] });
     const product = typeof price.product === "string" || "deleted" in price.product ? null : price.product;
-    const amount =
-      price.unit_amount === null
-        ? null
-        : new Intl.NumberFormat("tr-TR", { style: "currency", currency: price.currency.toUpperCase() }).format(
-            price.unit_amount / 100,
-          );
-    const interval = price.recurring ? (INTERVAL_LABELS[price.recurring.interval] ?? null) : null;
+    const amount = price.unit_amount === null ? null : formatMoney(price.unit_amount, price.currency);
+    const interval = price.recurring?.interval ?? null;
+    const intervalLabel = interval ? (INTERVAL_LABELS[interval] ?? null) : null;
     return {
+      found: true,
       name: product?.name ?? price.nickname ?? priceId,
-      price: amount && interval ? `${amount} / ${interval}` : amount,
+      price: amount && intervalLabel ? `${amount} / ${intervalLabel}` : amount,
+      unitAmount: price.unit_amount,
+      currency: price.currency,
+      interval,
     };
   } catch {
-    return { name: priceId, price: null };
+    return { found: false, name: priceId, price: null, unitAmount: null, currency: null, interval: null };
   }
 });
 

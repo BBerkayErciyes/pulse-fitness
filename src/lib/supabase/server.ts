@@ -27,16 +27,22 @@ export async function createSupabaseServerClient() {
 }
 
 /**
- * Returns the verified Supabase user id for a request, or null.
+ * Returns the verified Supabase user for a request, or null.
  * Accepts `Authorization: Bearer <access_token>` (mobile / API clients) and
  * falls back to the cookie session (web). getClaims() verifies the JWT
  * signature — never trust getSession() for authorization.
  */
-export async function getAuthenticatedUserId(request: Request): Promise<string | null> {
+export async function getAuthenticatedUser(
+  request: Request,
+): Promise<{ id: string; email: string | null } | null> {
   const supabase = await createSupabaseServerClient();
   const bearer = request.headers.get("authorization")?.match(/^Bearer\s+(.+)$/i)?.[1];
 
   const { data, error } = await supabase.auth.getClaims(bearer);
   if (error || !data?.claims.sub) return null;
-  return data.claims.sub;
+  return { id: data.claims.sub, email: data.claims.email ?? null };
+}
+
+export async function getAuthenticatedUserId(request: Request): Promise<string | null> {
+  return (await getAuthenticatedUser(request))?.id ?? null;
 }
