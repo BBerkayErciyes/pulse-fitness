@@ -4,7 +4,7 @@ import { subscriptions, users, type SubscriptionStatus } from "@/db/schema";
 import { hasAccess } from "@/lib/subscriptions/state-machine";
 
 export type AccessEligibility =
-  | { eligible: true; userId: string; fullName: string; status: SubscriptionStatus }
+  | { eligible: true; userId: string; firstName: string; fullName: string; status: SubscriptionStatus }
   | { eligible: false; reason: "user_not_found" | "no_subscription" | `subscription_${SubscriptionStatus}` };
 
 /**
@@ -30,5 +30,5 @@ export async function checkAccessEligibility(userId: string): Promise<AccessElig
   if (!hasAccess(row.status)) return { eligible: false, reason: `subscription_${row.status}` };
 
   const fullName = `${row.firstName} ${row.lastName}`.trim();
-  return { eligible: true, userId, fullName, status: row.status };
+  return { eligible: true, userId, firstName: row.firstName, fullName, status: row.status };
 }

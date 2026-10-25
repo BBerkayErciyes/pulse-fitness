@@ -74,6 +74,6 @@ export async function proxy(request: NextRequest) {
 export const config = {
   matcher: [
     // Skip static assets and machine-to-machine endpoints (Stripe, gate hardware).
-    "/((?!_next/static|_next/image|favicon.ico|api/webhooks|api/access/validate|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|api/webhooks|api/access/validate|api/gate|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
   ],
 };

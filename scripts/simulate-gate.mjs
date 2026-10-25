@@ -1,8 +1,9 @@
 // End-to-end gate simulation against a running app (default http://localhost:3000).
 // Usage: node scripts/simulate-gate.mjs [baseUrl]
 //
-// Creates a throwaway Supabase auth user, drives /api/access/generate and
-// /api/access/validate through every scenario, then deletes everything it made.
+// Creates a throwaway Supabase auth user, drives /api/access/generate,
+// /api/access/validate and the hardware endpoint /api/gate/verify through
+// every scenario, then deletes everything it made.
 import { randomUUID } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
 import { config } from "dotenv";
@@ -49,6 +50,24 @@ async function call(path, { bearer, body } = {}) {
 const gateKey = env("GATE_API_KEY");
 const validate = (token, key = gateKey) =>
   call("/api/access/validate", { bearer: key, body: { token, gate_id: GATE_ID } });
+
+// Raw call for /api/gate/verify, which accepts JSON or a text/plain scan.
+async function gateVerify({ json, text, key = gateKey, header = "bearer", gateId } = {}) {
+  const headers = {};
+  if (key && header === "bearer") headers.authorization = `Bearer ${key}`;
+  if (key && header === "x-gate-key") headers["x-gate-key"] = key;
+  if (gateId) headers["x-gate-id"] = gateId;
+  let body;
+  if (json !== undefined) {
+    headers["content-type"] = "application/json";
+    body = JSON.stringify(json);
+  } else if (text !== undefined) {
+    headers["content-type"] = "text/plain";
+    body = text;
+  }
+  const res = await fetch(`${BASE}/api/gate/verify`, { method: "POST", headers, body });
+  return { status: res.status, ...(await res.json().catch(() => ({}))) };
+}
 
 async function setSubscription(userId, status) {
   await sql`delete from subscriptions where user_id = ${userId}`;
@@ -130,7 +149,64 @@ try {
     reason: "no_subscription",
   });
 
-  const logs = await sql`select granted, reason from access_logs where user_id = ${userId} or gate_id = ${GATE_ID}`;
+  // --- /api/gate/verify: hardware endpoint ---
+  console.log("\n/api/gate/verify");
+  await setSubscription(userId, "active");
+  const health = await fetch(`${BASE}/api/gate/verify`, { headers: { authorization: `Bearer ${gateKey}` } });
+  check("GET health with key → ok", { status: health.status, ...(await health.json()) }, { status: 200, ok: true });
+  check("GET health without key → 401", { status: (await fetch(`${BASE}/api/gate/verify`)).status }, { status: 401 });
+
+  let qr = await generate();
+  check("no key → 401 deny", await gateVerify({ json: { token: qr.token }, key: null }), {
+    status: 401, action: "deny", reason: "unauthorized",
+  });
+  check("wrong key → 401 deny", await gateVerify({ json: { token: qr.token }, key: "wrong-key" }), {
+    status: 401, action: "deny", reason: "unauthorized",
+  });
+  check("empty body → 400 deny", await gateVerify({ json: {} }), { status: 400, action: "deny", reason: "bad_request" });
+
+  const opened = await gateVerify({ json: { token: qr.token, gate_id: GATE_ID } });
+  check("fresh QR (JSON) → open", opened, { status: 200, action: "open", reason: null });
+  check("open message greets by first name only", { ok: opened.message === "Hoş geldin, Sim!" }, { ok: true });
+  check("same QR again → deny (replay)", await gateVerify({ json: { token: qr.token, gate_id: GATE_ID } }), {
+    action: "deny", reason: "token_already_used",
+  });
+
+  // Raw scanner output with trailing CR/LF, X-Gate-Key auth, gate id from header.
+  qr = await generate();
+  check("raw text/plain scan + X-Gate-Key → open",
+    await gateVerify({ text: `${qr.token}\r\n`, header: "x-gate-key", gateId: `${GATE_ID}-raw` }), { action: "open" });
+  const [rawLog] = await sql`select granted from access_logs where gate_id = ${GATE_ID + "-raw"}`;
+  check("raw scan logged with header gate id", { granted: rawLog?.granted }, { granted: true });
+
+  qr = await generate();
+  check("tampered QR → deny invalid_token", await gateVerify({ json: { token: qr.token.slice(0, -2) + "xx", gate_id: GATE_ID } }), {
+    action: "deny", reason: "invalid_token",
+  });
+  check("expired QR → deny token_expired", await gateVerify({ json: { qr: expired, gate_id: GATE_ID } }), {
+    action: "deny", reason: "token_expired",
+  });
+  check("QR from another secret → deny invalid_token", await gateVerify({
+    json: { token: await new SignJWT().setProtectedHeader({ alg: "HS256" }).setSubject(userId).setJti(randomUUID())
+      .setIssuer("pulse-fitness").setAudience("pulse-gate").setExpirationTime("30s")
+      .sign(new TextEncoder().encode("x".repeat(48))), gate_id: GATE_ID },
+  }), { action: "deny", reason: "invalid_token" });
+
+  // Subscription changes after the QR was shown: the DB check at the gate wins.
+  qr = await generate();
+  await setSubscription(userId, "paused");
+  check("paused after QR issued → deny", await gateVerify({ json: { token: qr.token, gate_id: GATE_ID } }), {
+    action: "deny", reason: "subscription_paused",
+  });
+  await setSubscription(userId, "past_due");
+  check("past_due (grace) → open", await gateVerify({ json: { token: qr.token, gate_id: GATE_ID } }), { action: "open" });
+  qr = await generate();
+  await setSubscription(userId, null);
+  check("no subscription → deny", await gateVerify({ json: { token: qr.token, gate_id: GATE_ID } }), {
+    action: "deny", reason: "no_subscription",
+  });
+
+  const logs = await sql`select granted, reason from access_logs where user_id = ${userId} or gate_id like ${GATE_ID + "%"}`;
   console.log(`\naccess_logs written: ${logs.length} (${logs.filter((l) => l.granted).length} granted)`);
 } finally {
   // Each cleanup step is independent so one failure (e.g. DB unreachable)
@@ -139,7 +215,7 @@ try {
     const { error } = await admin.auth.admin.deleteUser(userId); // cascades users + subscriptions
     if (error) console.error(`Cleanup: could not delete test user ${email}: ${error.message}`);
   }
-  await sql`delete from access_logs where gate_id = ${GATE_ID}`.catch((err) =>
+  await sql`delete from access_logs where gate_id like ${GATE_ID + "%"}`.catch((err) =>
     console.error(`Cleanup: could not delete ${GATE_ID} access logs: ${err.message}`),
   );
   await sql.end();
