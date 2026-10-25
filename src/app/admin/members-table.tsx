@@ -19,7 +19,7 @@ export async function MembersTable({ rows }: { rows: AdminMemberRow[] }) {
   const plans = new Map(await Promise.all(planIds.map(async (id) => [id, (await getPlanInfo(id)).name] as const)));
 
   return (
-    <div className="-mx-4 overflow-x-auto px-4">
+    <div className="relative -mx-4 overflow-x-auto px-4">
       <table className="w-full min-w-[64rem] text-left text-sm">
         <thead className="border-b text-xs text-muted-foreground">
           <tr>

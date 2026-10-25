@@ -18,7 +18,7 @@ import { AwaitingActivation } from "./checkout-notice";
 import { RecentVisits } from "./recent-visits";
 import { SubscriptionCard } from "./subscription-card";
 
-export const metadata: Metadata = { title: "Üye Paneli" };
+export const metadata: Metadata = { title: "Üye Paneli", robots: { index: false, follow: false } };
 
 // The header is static and prerenders into the shell; everything that reads the
 // session streams in behind <Suspense> (required with cacheComponents).

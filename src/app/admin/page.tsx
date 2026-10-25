@@ -11,12 +11,13 @@ import { requireAdmin } from "@/lib/admin/auth";
 import { listMembers, MEMBERS_PAGE_SIZE, parsePage, parseStatusFilter } from "@/lib/admin/queries";
 import { STATUS_LABELS } from "@/lib/subscriptions/labels";
 import { cn } from "@/lib/utils";
+import { AnalyticsSection } from "./analytics-section";
 import { firstParam } from "./format";
 import { MembersTable } from "./members-table";
 import { OverviewStats } from "./overview-stats";
 import { Pagination } from "./pagination";
 
-export const metadata: Metadata = { title: "Yönetim · Üyeler", robots: { index: false } };
+export const metadata: Metadata = { title: "Yönetim · Üyeler", robots: { index: false, follow: false } };
 
 export default function AdminMembersPage({ searchParams }: PageProps<"/admin">) {
   return (
@@ -28,6 +29,10 @@ export default function AdminMembersPage({ searchParams }: PageProps<"/admin">) 
 
       <Suspense fallback={<StatsSkeleton />}>
         <OverviewStats />
+      </Suspense>
+
+      <Suspense fallback={<AnalyticsSkeleton />}>
+        <AnalyticsSection />
       </Suspense>
 
       <Card>
@@ -117,6 +122,23 @@ function StatsSkeleton() {
       {Array.from({ length: 5 }, (_, i) => (
         <Skeleton key={i} className="h-24 rounded-xl" />
       ))}
+    </div>
+  );
+}
+
+function AnalyticsSkeleton() {
+  return (
+    <div className="space-y-4" aria-busy="true" aria-label="Yükleniyor">
+      <Skeleton className="h-6 w-28" />
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {Array.from({ length: 4 }, (_, i) => (
+          <Skeleton key={i} className="h-24 rounded-xl" />
+        ))}
+      </div>
+      <div className="grid gap-4 lg:grid-cols-3">
+        <Skeleton className="h-80 rounded-xl lg:col-span-2" />
+        <Skeleton className="h-80 rounded-xl" />
+      </div>
     </div>
   );
 }

@@ -3,7 +3,11 @@ import { Suspense } from "react";
 import { AuthShell } from "@/components/auth-shell";
 import { LoginForm } from "./login-form";
 
-export const metadata: Metadata = { title: "Giriş" };
+export const metadata: Metadata = {
+  title: "Giriş Yap",
+  description: "Pulse Fitness üye paneline giriş yap: üyeliğini yönet, QR kodunla salona gir.",
+  alternates: { canonical: "/login" },
+};
 
 // Only same-origin paths, never "//evil.com" style protocol-relative URLs.
 function safeNext(value: string | string[] | undefined): string {

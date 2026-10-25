@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { BASE_OPEN_GRAPH, SITE, siteUrl } from "@/lib/site";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -13,14 +14,24 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: { default: "Pulse Fitness", template: "%s · Pulse Fitness" },
-  description: "Pulse Fitness üye paneli: üyeliğini yönet, QR ile salona gir.",
+  metadataBase: siteUrl(),
+  title: { default: SITE.title, template: `%s · ${SITE.name}` },
+  description: SITE.description,
+  applicationName: SITE.name,
+  keywords: ["spor salonu", "fitness", "gym", "üyelik", "QR giriş", "Pulse Fitness"],
+  authors: [{ name: SITE.name }],
+  creator: SITE.name,
+  publisher: SITE.name,
+  formatDetection: { telephone: false, email: false, address: false },
+  openGraph: { ...BASE_OPEN_GRAPH, title: SITE.title, description: SITE.description, url: "/" },
+  twitter: { card: "summary_large_image", title: SITE.title, description: SITE.description },
+  appleWebApp: { title: SITE.name, statusBarStyle: "default" },
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#e8452c",
+  themeColor: SITE.themeColor,
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

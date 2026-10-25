@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import { AuthShell } from "@/components/auth-shell";
 import { ForgotPasswordForm } from "./forgot-password-form";
 
-export const metadata: Metadata = { title: "Şifremi Unuttum" };
+export const metadata: Metadata = { title: "Şifremi Unuttum", robots: { index: false, follow: false } };
 
 async function FormWithLinkError({ searchParams }: Pick<PageProps<"/forgot-password">, "searchParams">) {
   const { error } = await searchParams;

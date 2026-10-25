@@ -15,7 +15,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { cn } from "@/lib/utils";
 import { ProfileForm } from "./profile-form";
 
-export const metadata: Metadata = { title: "Profil Ayarları" };
+export const metadata: Metadata = { title: "Profil Ayarları", robots: { index: false, follow: false } };
 
 export default function ProfilePage() {
   return (

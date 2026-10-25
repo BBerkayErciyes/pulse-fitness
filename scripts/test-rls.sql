@@ -77,6 +77,17 @@ BEGIN
   END IF;
 
   BEGIN
+    PERFORM * FROM public.admin_access_daily(7);
+    RAISE EXCEPTION 'member can call admin_access_daily';
+  EXCEPTION WHEN insufficient_privilege THEN NULL;
+  END;
+  BEGIN
+    PERFORM * FROM public.admin_live_plan_counts();
+    RAISE EXCEPTION 'member can call admin_live_plan_counts';
+  EXCEPTION WHEN insufficient_privilege THEN NULL;
+  END;
+
+  BEGIN
     UPDATE public.subscriptions SET status = 'active', current_period_end = now() + interval '10 years';
     RAISE EXCEPTION 'member modified a subscription';
   EXCEPTION WHEN insufficient_privilege THEN NULL;
@@ -105,6 +116,21 @@ BEGIN
   END IF;
   IF (SELECT count(*) FROM public.access_logs WHERE user_id::text LIKE '00000000-0000-0000-0000-00000000000_') <> 2 THEN
     RAISE EXCEPTION 'admin cannot see all access logs';
+  END IF;
+
+  -- Fixture logs were written "now", so they land on the last (today's) row;
+  -- real data may add to the counts, hence >=.
+  IF (SELECT count(*) FROM public.admin_access_daily(7)) <> 7 THEN
+    RAISE EXCEPTION 'admin_access_daily must return one row per day';
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM public.admin_access_daily(7) d
+    WHERE d.day = (now() AT TIME ZONE 'Europe/Istanbul')::date AND d.granted >= 1 AND d.denied >= 1
+  ) THEN
+    RAISE EXCEPTION 'admin_access_daily missed today''s scans';
+  END IF;
+  IF (SELECT active FROM public.admin_live_plan_counts() WHERE plan_id = 'plan_basic') <> 2 THEN
+    RAISE EXCEPTION 'admin_live_plan_counts wrong for plan_basic';
   END IF;
 END $$;
 

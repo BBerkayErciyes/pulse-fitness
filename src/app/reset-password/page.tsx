@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { AuthShell } from "@/components/auth-shell";
 import { ResetPasswordForm } from "./reset-password-form";
 
-export const metadata: Metadata = { title: "Yeni Şifre" };
+export const metadata: Metadata = { title: "Yeni Şifre", robots: { index: false, follow: false } };
 
 export default function ResetPasswordPage() {
   return (

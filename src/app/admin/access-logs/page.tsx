@@ -19,7 +19,7 @@ import { cn } from "@/lib/utils";
 import { firstParam, formatDateTime, fullName } from "../format";
 import { Pagination } from "../pagination";
 
-export const metadata: Metadata = { title: "Yönetim · Geçiş Kayıtları", robots: { index: false } };
+export const metadata: Metadata = { title: "Yönetim · Geçiş Kayıtları", robots: { index: false, follow: false } };
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -106,7 +106,7 @@ async function AccessLogs({ searchParams }: Pick<PageProps<"/admin/access-logs">
       {rows.length === 0 ? (
         <p className="rounded-lg bg-muted p-6 text-center text-sm text-muted-foreground">Kayıt bulunamadı.</p>
       ) : (
-        <div className="-mx-4 overflow-x-auto px-4">
+        <div className="relative -mx-4 overflow-x-auto px-4">
           <table className="w-full min-w-[44rem] text-left text-sm">
             <thead className="border-b text-xs text-muted-foreground">
               <tr>

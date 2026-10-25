@@ -9,13 +9,25 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Skeleton } from "@/components/ui/skeleton";
 import { PLAN_KEYS, PLANS, priceIdFor, type PlanDefinition } from "@/lib/billing/plans";
 import { getCachedPlanInfo } from "@/lib/billing/prices";
+import { BASE_OPEN_GRAPH, SITE } from "@/lib/site";
 import { formatMoney } from "@/lib/subscriptions/dashboard";
 import { cn } from "@/lib/utils";
 import { CheckoutButton } from "./checkout-button";
 
+const PRICING_DESCRIPTION =
+  "Pulse Fitness aylık ve yıllık üyelik paketleri: sınırsız giriş, QR ile temassız turnike, gizli ücret yok. Online başla, istediğin zaman iptal et.";
+
 export const metadata: Metadata = {
-  title: "Paketler",
-  description: "Pulse Fitness aylık ve yıllık üyelik paketleri.",
+  title: "Üyelik Paketleri",
+  description: PRICING_DESCRIPTION,
+  alternates: { canonical: "/pricing" },
+  openGraph: {
+    ...BASE_OPEN_GRAPH,
+    title: `Üyelik Paketleri · ${SITE.name}`,
+    description: PRICING_DESCRIPTION,
+    url: "/pricing",
+  },
+  twitter: { card: "summary_large_image", title: `Üyelik Paketleri · ${SITE.name}`, description: PRICING_DESCRIPTION },
 };
 
 export default function PricingPage() {

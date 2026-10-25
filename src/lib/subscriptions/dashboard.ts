@@ -16,6 +16,8 @@ export interface PlanInfo {
   unitAmount: number | null;
   currency: string | null;
   interval: string | null;
+  /** e.g. 3 for "every 3 months"; 1 when not recurring or unknown. */
+  intervalCount: number;
 }
 
 export function formatMoney(minorUnits: number, currency: string): string {
@@ -42,9 +44,10 @@ export const getPlanInfo = cache(async (priceId: string): Promise<PlanInfo> => {
       unitAmount: price.unit_amount,
       currency: price.currency,
       interval,
+      intervalCount: price.recurring?.interval_count ?? 1,
     };
   } catch {
-    return { found: false, name: priceId, price: null, unitAmount: null, currency: null, interval: null };
+    return { found: false, name: priceId, price: null, unitAmount: null, currency: null, interval: null, intervalCount: 1 };
   }
 });
 
