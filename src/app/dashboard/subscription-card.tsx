@@ -1,6 +1,9 @@
-import { AlertTriangle, CalendarDays, CreditCard } from "lucide-react";
+import { AlertTriangle, ArrowRight, CalendarDays, CreditCard } from "lucide-react";
+import Link from "next/link";
+import { buttonVariants } from "@/components/ui/button";
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import type { DashboardSubscription, PlanInfo } from "@/lib/subscriptions/dashboard";
+import { cn } from "@/lib/utils";
 import { StatusBadge } from "./status-badge";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -33,8 +36,13 @@ export function SubscriptionCard({
           <CardTitle>Üyelik</CardTitle>
           <CardDescription>Henüz bir üyelik paketin yok.</CardDescription>
         </CardHeader>
-        <CardContent className="text-sm text-muted-foreground">
-          Salona QR ile girebilmek için bir paket seçmen gerekiyor.
+        <CardContent className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Salona QR ile girebilmek için bir paket seçmen gerekiyor.
+          </p>
+          <Link href="/pricing" className={cn(buttonVariants({ size: "lg" }), "h-12 w-full text-base sm:w-auto sm:px-6")}>
+            Paketleri İncele <ArrowRight />
+          </Link>
         </CardContent>
       </Card>
     );

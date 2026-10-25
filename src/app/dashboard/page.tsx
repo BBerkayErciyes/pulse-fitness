@@ -119,7 +119,8 @@ async function MemberDashboard({ searchParams }: Pick<PageProps<"/dashboard">, "
                 <p className="rounded-lg bg-muted p-4 text-sm text-muted-foreground">
                   QR kod oluşturmak için aktif bir üyeliğin olmalı.
                 </p>
-                {subscription?.status !== "paused" && (
+                {/* No-subscription users get the CTA in the subscription card instead. */}
+                {subscription?.status === "canceled" && (
                   <Link href="/pricing" className={cn(buttonVariants({ size: "lg" }), "h-12 w-full text-base")}>
                     Paketleri incele <ArrowRight />
                   </Link>

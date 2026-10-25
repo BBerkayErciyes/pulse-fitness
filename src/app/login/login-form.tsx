@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
@@ -91,13 +92,23 @@ export function LoginForm({ next }: { next: string }) {
             <Input id="email" name="email" type="email" autoComplete="email" inputMode="email" required />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="password">Şifre</Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="password">Şifre</Label>
+              {!isSignUp && (
+                <Link
+                  href="/forgot-password"
+                  className="text-sm text-muted-foreground underline-offset-4 hover:text-primary hover:underline"
+                >
+                  Şifremi Unuttum
+                </Link>
+              )}
+            </div>
             <Input
               id="password"
               name="password"
               type="password"
               autoComplete={isSignUp ? "new-password" : "current-password"}
-              minLength={6}
+              minLength={isSignUp ? 8 : undefined}
               required
             />
           </div>

@@ -36,6 +36,13 @@ export async function proxy(request: NextRequest) {
     url.search = `?next=${encodeURIComponent(pathname)}`;
     return NextResponse.redirect(url);
   }
+  // Setting a new password needs the recovery session from /auth/confirm.
+  if (!isSignedIn && pathname === "/reset-password") {
+    const url = request.nextUrl.clone();
+    url.pathname = "/forgot-password";
+    url.search = "?error=link_invalid";
+    return NextResponse.redirect(url);
+  }
   if (isSignedIn && pathname === "/login") {
     const url = request.nextUrl.clone();
     url.pathname = "/dashboard";
