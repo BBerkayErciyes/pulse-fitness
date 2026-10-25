@@ -1,19 +1,20 @@
-// Grants or revokes the admin role. Roles can only change through a trusted
+// Sets a user's role (admin / staff / member). Roles can only change through a trusted
 // database role (see drizzle/0006_admin_role_guard.sql), so this runs as the
 // postgres owner via DIRECT_URL — never from the browser.
 //
 // Usage:
 //   node scripts/set-role.mjs <email> admin
+//   node scripts/set-role.mjs <email> staff     # front desk: members + gate logs, no finance
 //   node scripts/set-role.mjs <email> member
-//   node scripts/set-role.mjs --list          # show current admins
+//   node scripts/set-role.mjs --list            # show current admins and staff
 import { config } from "dotenv";
 import postgres from "postgres";
 
 config({ path: [".env.local", ".env"], quiet: true });
 
 const [emailOrFlag, role] = process.argv.slice(2);
-if (!emailOrFlag || (emailOrFlag !== "--list" && !["admin", "member"].includes(role))) {
-  console.error("Usage: node scripts/set-role.mjs <email> <admin|member>  |  --list");
+if (!emailOrFlag || (emailOrFlag !== "--list" && !["admin", "staff", "member"].includes(role))) {
+  console.error("Usage: node scripts/set-role.mjs <email> <admin|staff|member>  |  --list");
   process.exit(1);
 }
 
@@ -22,11 +23,11 @@ const sql = postgres(process.env.DIRECT_URL ?? process.env.DATABASE_URL, { max: 
 try {
   if (emailOrFlag === "--list") {
     const admins = await sql`
-      SELECT a.email, u.first_name, u.last_name, u.updated_at
+      SELECT a.email, u.role, u.first_name, u.last_name, u.updated_at
       FROM public.users u JOIN auth.users a ON a.id = u.id
-      WHERE u.role = 'admin' ORDER BY a.email`;
+      WHERE u.role IN ('admin', 'staff') ORDER BY u.role, a.email`;
     if (admins.length) console.table(admins);
-    else console.log("No admins yet.");
+    else console.log("No admins or staff yet.");
   } else {
     const rows = await sql`
       UPDATE public.users u SET role = ${role}

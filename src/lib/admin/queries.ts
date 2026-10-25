@@ -5,7 +5,7 @@ import { getDb } from "@/db";
 import { accessLogs, subscriptions, subscriptionStatus, users, type SubscriptionStatus } from "@/db/schema";
 
 // Every query here goes through Drizzle as the postgres owner (bypassing RLS),
-// so callers must have passed requireAdmin() first.
+// so callers must have passed requireStaff() (or requireAdmin()) first.
 
 export const MEMBERS_PAGE_SIZE = 25;
 export const ACCESS_LOGS_PAGE_SIZE = 50;
@@ -29,6 +29,8 @@ export function parsePage(value: unknown): number {
 
 // public.users and auth.users share a name, so joining both needs an alias.
 const authUsers = alias(authUsersTable, "auth_users");
+// Staff member who recorded a manual entry.
+const actors = alias(users, "actors");
 
 const escapeLike = (term: string) => term.replace(/[\\%_]/g, (c) => `\\${c}`);
 
@@ -46,6 +48,7 @@ function currentSubscriptions() {
       planId: subscriptions.planId,
       currentPeriodEnd: subscriptions.currentPeriodEnd,
       cancelAtPeriodEnd: subscriptions.cancelAtPeriodEnd,
+      pauseResumesAt: subscriptions.pauseResumesAt,
     })
     .from(subscriptions)
     .orderBy(subscriptions.userId, sql`${subscriptions.status} = 'canceled'`, desc(subscriptions.createdAt))
@@ -125,6 +128,7 @@ export async function listMembers({
       planId: current.planId,
       currentPeriodEnd: current.currentPeriodEnd,
       cancelAtPeriodEnd: current.cancelAtPeriodEnd,
+      pauseResumesAt: current.pauseResumesAt,
       // Served by access_logs_user_id_created_at_idx.
       lastVisitAt: sql<Date | null>`(
         SELECT max(${accessLogs.createdAt}) FROM ${accessLogs}
@@ -175,6 +179,9 @@ export async function listAccessLogs({
         granted: accessLogs.granted,
         reason: accessLogs.reason,
         gateId: accessLogs.gateId,
+        note: accessLogs.note,
+        actorFirstName: actors.firstName,
+        actorLastName: actors.lastName,
         userId: accessLogs.userId,
         firstName: users.firstName,
         lastName: users.lastName,
@@ -183,6 +190,7 @@ export async function listAccessLogs({
       .from(accessLogs)
       .leftJoin(users, eq(users.id, accessLogs.userId))
       .leftJoin(authUsers, eq(authUsers.id, accessLogs.userId))
+      .leftJoin(actors, eq(actors.id, accessLogs.actorId))
       .where(where)
       .orderBy(desc(accessLogs.createdAt))
       .limit(ACCESS_LOGS_PAGE_SIZE)

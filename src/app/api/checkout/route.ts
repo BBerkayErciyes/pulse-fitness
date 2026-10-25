@@ -4,6 +4,7 @@ import { appUrl } from "@/lib/app-url";
 import { subscriptions, users } from "@/db/schema";
 import { buildCheckoutSessionParams } from "@/lib/billing/checkout";
 import { isPlanKey, priceIdFor } from "@/lib/billing/plans";
+import { hasAllConsents } from "@/lib/legal/consents";
 import { getStripe } from "@/lib/stripe";
 import { getAuthenticatedUser } from "@/lib/supabase/server";
 
@@ -25,6 +26,11 @@ export async function POST(request: Request) {
   if (!priceId || !process.env.STRIPE_SECRET_KEY) {
     console.error(`[checkout] Stripe is not configured for plan "${plan}"`);
     return Response.json({ error: "billing_not_configured" }, { status: 503, headers: NO_STORE });
+  }
+
+  // The distance sales contract (and KVKK/health consent) precedes any sale.
+  if (!(await hasAllConsents(user.id))) {
+    return Response.json({ error: "consents_required" }, { status: 403, headers: NO_STORE });
   }
 
   const db = getDb();

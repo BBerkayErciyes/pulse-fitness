@@ -1,11 +1,11 @@
-import { CheckCircle2, X, XCircle } from "lucide-react";
+import { CheckCircle2, DoorOpen, X, XCircle } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { requireAdmin } from "@/lib/admin/auth";
+import { requireStaff } from "@/lib/admin/auth";
 import {
   ACCESS_LOGS_PAGE_SIZE,
   getMemberName,
@@ -53,7 +53,7 @@ export default function AccessLogsPage({ searchParams }: PageProps<"/admin/acces
 }
 
 async function AccessLogs({ searchParams }: Pick<PageProps<"/admin/access-logs">, "searchParams">) {
-  await requireAdmin("/admin/access-logs");
+  await requireStaff("/admin/access-logs");
   const params = await searchParams;
   const result = parseResultFilter(firstParam(params.result));
   const member = firstParam(params.member);
@@ -137,7 +137,17 @@ async function AccessLogs({ searchParams }: Pick<PageProps<"/admin/access-logs">
                     {log.email && <div className="text-xs text-muted-foreground">{log.email}</div>}
                   </td>
                   <td className="py-2.5 pr-4">
-                    {log.granted ? (
+                    {log.granted && log.reason === "manual_bypass" ? (
+                      <div>
+                        <span className="inline-flex items-center gap-1.5 text-success">
+                          <DoorOpen className="size-4" /> Manuel geçiş
+                        </span>
+                        <div className="text-xs text-muted-foreground">
+                          {log.actorFirstName !== null ? fullName(log.actorFirstName, log.actorLastName) : "Silinmiş personel"}
+                          {log.note && ` · ${log.note}`}
+                        </div>
+                      </div>
+                    ) : log.granted ? (
                       <span className="inline-flex items-center gap-1.5 text-success">
                         <CheckCircle2 className="size-4" /> Giriş yapıldı
                       </span>

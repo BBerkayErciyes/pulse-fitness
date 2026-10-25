@@ -1,9 +1,10 @@
 import { getPlanInfo, type PlanInfo } from "@/lib/subscriptions/dashboard";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-// Analytics go through the admin_* RPCs (drizzle/0007) with the admin's own
-// JWT, so the database enforces is_admin() itself; callers still run
-// requireAdmin() first for the redirect.
+// Analytics go through the admin_* RPCs (drizzle/0007, 0009) with the
+// viewer's own JWT, so the database enforces the role itself: gate traffic is
+// staff-readable, plan counts (revenue) admin-only. Callers still run
+// requireStaff()/requireAdmin() first for the redirect.
 
 export const ACCESS_CHART_DAYS = 7;
 
@@ -36,21 +37,23 @@ function monthlyAmount(plan: PlanInfo): number | null {
 // PostgREST returns bigint as number for counts in this range; coerce anyway.
 const n = (v: unknown) => Number(v ?? 0);
 
-export async function getAdminAnalytics() {
+export async function getDailyAccess(): Promise<DailyAccess[]> {
   const supabase = await createSupabaseServerClient();
-  const [daily, plans] = await Promise.all([
-    supabase.rpc("admin_access_daily", { p_days: ACCESS_CHART_DAYS }),
-    supabase.rpc("admin_live_plan_counts"),
-  ]);
+  const daily = await supabase.rpc("admin_access_daily", { p_days: ACCESS_CHART_DAYS });
   if (daily.error) throw new Error(`admin_access_daily failed: ${daily.error.message}`);
-  if (plans.error) throw new Error(`admin_live_plan_counts failed: ${plans.error.message}`);
-
-  const days: DailyAccess[] = (daily.data as Record<string, unknown>[]).map((r) => ({
+  return (daily.data as Record<string, unknown>[]).map((r) => ({
     day: String(r.day),
     granted: n(r.granted),
     denied: n(r.denied),
     uniqueMembers: n(r.unique_members),
   }));
+}
+
+/** Admin only: the RPC rejects staff. */
+export async function getFinance() {
+  const supabase = await createSupabaseServerClient();
+  const plans = await supabase.rpc("admin_live_plan_counts");
+  if (plans.error) throw new Error(`admin_live_plan_counts failed: ${plans.error.message}`);
 
   const planRows = plans.data as Record<string, unknown>[];
   const revenue: PlanRevenue[] = await Promise.all(
@@ -76,7 +79,6 @@ export async function getAdminAnalytics() {
   }
 
   return {
-    days,
     revenue,
     liveSubscribers: planRows.reduce((sum, r) => sum + n(r.active) + n(r.past_due), 0),
     pastDue: planRows.reduce((sum, r) => sum + n(r.past_due), 0),
@@ -87,4 +89,4 @@ export async function getAdminAnalytics() {
   };
 }
 
-export type AdminAnalytics = Awaited<ReturnType<typeof getAdminAnalytics>>;
+export type Finance = Awaited<ReturnType<typeof getFinance>>;

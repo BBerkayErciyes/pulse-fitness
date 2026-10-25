@@ -69,6 +69,7 @@ export async function getMemberDashboard(userId: string) {
       currentPeriodStart: subscriptions.currentPeriodStart,
       currentPeriodEnd: subscriptions.currentPeriodEnd,
       cancelAtPeriodEnd: subscriptions.cancelAtPeriodEnd,
+      pauseResumesAt: subscriptions.pauseResumesAt,
     })
     .from(subscriptions)
     .where(eq(subscriptions.userId, userId))

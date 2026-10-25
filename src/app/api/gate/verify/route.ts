@@ -26,7 +26,7 @@ const DENY_MESSAGES: Record<string, string> = {
   token_already_used: "Bu QR kod zaten kullanıldı.",
   user_not_found: "Üye bulunamadı.",
   no_subscription: "Aktif üyelik bulunamadı.",
-  subscription_paused: "Üyeliğin dondurulmuş.",
+  subscription_paused: "Üyeliğin dondurulmuş. Panelden dondurmayı kaldırabilirsin.",
   subscription_canceled: "Üyeliğin iptal edilmiş.",
   unauthorized: "Cihaz yetkili değil.",
   bad_request: "QR kod okunamadı.",

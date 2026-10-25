@@ -16,6 +16,8 @@ export const ACCESS_REASON_LABELS: Record<string, string> = {
   token_expired: "QR kodun süresi dolmuştu.",
   token_already_used: "Bu QR kod daha önce kullanıldı.",
   invalid_token: "Geçersiz QR kod.",
+  manual_bypass: "Görevli tarafından giriş yapıldı.",
+  consents_required: "Önce yasal onayları tamamlaman gerekiyor.",
 };
 
 // Staff-facing wording for the same reasons (admin gate history).
@@ -28,4 +30,5 @@ export const ADMIN_ACCESS_REASON_LABELS: Record<string, string> = {
   token_expired: "QR süresi dolmuş",
   token_already_used: "QR tekrar kullanıldı",
   invalid_token: "Geçersiz QR",
+  manual_bypass: "Manuel geçiş",
 };

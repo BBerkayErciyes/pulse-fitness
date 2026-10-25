@@ -1,6 +1,8 @@
 import { pgEnum } from "drizzle-orm/pg-core";
 
-export const userRole = pgEnum("user_role", ["admin", "member"]);
+// staff: front desk. Sees members and gate logs, may record manual entries;
+// no finance (revenue, Stripe) and no subscription changes.
+export const userRole = pgEnum("user_role", ["admin", "staff", "member"]);
 
 export const subscriptionStatus = pgEnum("subscription_status", [
   "active",

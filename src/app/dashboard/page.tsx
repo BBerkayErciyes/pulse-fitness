@@ -9,6 +9,8 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getMemberDashboard, getPlanInfo } from "@/lib/subscriptions/dashboard";
+import { getMissingConsents } from "@/lib/legal/consents";
+import { planAllowsSelfFreeze } from "@/lib/subscriptions/freeze";
 import { hasAccess } from "@/lib/subscriptions/state-machine";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { cn } from "@/lib/utils";
@@ -74,10 +76,14 @@ async function MemberDashboard({ searchParams }: Pick<PageProps<"/dashboard">, "
   const userId = data?.claims.sub;
   if (!userId) redirect("/login?next=/dashboard");
 
-  const [{ profile, subscription, recentVisits }, { success, canceled }] = await Promise.all([
+  const [{ profile, subscription, recentVisits }, { success, canceled }, missingConsents] = await Promise.all([
     getMemberDashboard(userId),
     searchParams,
+    getMissingConsents(userId),
   ]);
+  // Accounts without the current legal consents (created before Phase 12, or
+  // outside /signup) accept them before using the panel.
+  if (missingConsents.length > 0) redirect("/dashboard/consents");
   const plan = subscription ? await getPlanInfo(subscription.planId) : null;
   const canEnter = subscription !== null && hasAccess(subscription.status);
   const now = requestTime();
@@ -115,9 +121,9 @@ async function MemberDashboard({ searchParams }: Pick<PageProps<"/dashboard">, "
             {profile?.firstName || "Üye"} 👋
           </h1>
         </div>
-        {profile?.role === "admin" && (
+        {(profile?.role === "admin" || profile?.role === "staff") && (
           <Link href="/admin" className={buttonVariants({ variant: "outline", size: "sm" })}>
-            <Settings /> Yönetim paneli
+            <Settings /> {profile.role === "admin" ? "Yönetim paneli" : "Personel paneli"}
           </Link>
         )}
       </section>
@@ -150,7 +156,12 @@ async function MemberDashboard({ searchParams }: Pick<PageProps<"/dashboard">, "
         </Card>
 
         <div className="md:col-span-3">
-          <SubscriptionCard subscription={subscription} plan={plan} now={now.getTime()} />
+          <SubscriptionCard
+            subscription={subscription}
+            plan={plan}
+            now={now.getTime()}
+            canSelfFreeze={plan !== null && planAllowsSelfFreeze(plan)}
+          />
         </div>
         <div className="md:col-span-3">
           <RecentVisits visits={recentVisits} />

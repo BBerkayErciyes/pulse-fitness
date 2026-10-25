@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { subscriptionStatus } from "@/db/schema";
-import { requireAdmin } from "@/lib/admin/auth";
+import { requireStaff } from "@/lib/admin/auth";
 import { listMembers, MEMBERS_PAGE_SIZE, parsePage, parseStatusFilter } from "@/lib/admin/queries";
 import { STATUS_LABELS } from "@/lib/subscriptions/labels";
 import { cn } from "@/lib/utils";
@@ -51,7 +51,7 @@ export default function AdminMembersPage({ searchParams }: PageProps<"/admin">) 
 }
 
 async function Members({ searchParams }: Pick<PageProps<"/admin">, "searchParams">) {
-  await requireAdmin();
+  const viewer = await requireStaff();
   const params = await searchParams;
   const query = firstParam(params.q)?.slice(0, 100) ?? null;
   const status = parseStatusFilter(firstParam(params.status));
@@ -103,7 +103,7 @@ async function Members({ searchParams }: Pick<PageProps<"/admin">, "searchParams
         {total} üye{filtered && " filtreyle eşleşti"}
       </p>
 
-      <MembersTable rows={rows} />
+      <MembersTable rows={rows} viewerRole={viewer.role} />
 
       <Pagination
         pathname="/admin"

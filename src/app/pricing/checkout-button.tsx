@@ -39,6 +39,11 @@ export function CheckoutButton({
         return;
       }
       const body = await res.json().catch(() => ({}));
+      if (body.error === "consents_required") {
+        // The distance sales contract must be accepted before paying.
+        router.push("/dashboard/consents");
+        return;
+      }
       if (!res.ok || typeof body.url !== "string") {
         setError(ERRORS[body.error] ?? "Ödeme sayfası açılamadı. Tekrar dene.");
         setPending(false);

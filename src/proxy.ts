@@ -6,7 +6,7 @@ const ADMIN_PREFIX = "/admin";
 
 // Refreshes the Supabase session cookie on every page request (Server
 // Components cannot write cookies) and gates protected pages. The admin check
-// here is only an optimistic redirect; /admin pages re-verify with requireAdmin().
+// here is only an optimistic redirect; /admin pages re-verify with requireStaff()/requireAdmin().
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });
 
@@ -47,7 +47,9 @@ export async function proxy(request: NextRequest) {
       .select("role")
       .eq("id", userId)
       .maybeSingle();
-    if (profile?.role !== "admin") {
+    // Front-desk staff may enter the panel; finance and subscription changes
+    // inside it are gated per component/action.
+    if (profile?.role !== "admin" && profile?.role !== "staff") {
       const url = request.nextUrl.clone();
       url.pathname = "/dashboard";
       url.search = "";
@@ -61,7 +63,7 @@ export async function proxy(request: NextRequest) {
     url.search = "?error=link_invalid";
     return NextResponse.redirect(url);
   }
-  if (isSignedIn && pathname === "/login") {
+  if (isSignedIn && (pathname === "/login" || pathname === "/signup")) {
     const url = request.nextUrl.clone();
     url.pathname = "/dashboard";
     url.search = "";
@@ -73,7 +75,7 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    // Skip static assets and machine-to-machine endpoints (Stripe, gate hardware).
-    "/((?!_next/static|_next/image|favicon.ico|api/webhooks|api/access/validate|api/gate|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
+    // Skip static assets and machine-to-machine endpoints (Stripe, gate hardware, cron).
+    "/((?!_next/static|_next/image|favicon.ico|api/webhooks|api/access/validate|api/gate|api/cron|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
   ],
 };

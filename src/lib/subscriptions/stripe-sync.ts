@@ -97,6 +97,10 @@ export async function syncStripeSubscription(
     currentPeriodStart: new Date(item.current_period_start * 1000),
     currentPeriodEnd: new Date(item.current_period_end * 1000),
     cancelAtPeriodEnd: sub.cancel_at_period_end,
+    pauseResumesAt:
+      status === "paused" && sub.pause_collection?.resumes_at
+        ? new Date(sub.pause_collection.resumes_at * 1000)
+        : null,
     // Stripe also sets canceled_at when a cancellation is merely scheduled;
     // we only record it once the subscription is actually canceled.
     canceledAt:

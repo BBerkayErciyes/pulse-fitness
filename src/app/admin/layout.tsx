@@ -7,8 +7,8 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { AdminNav } from "./admin-nav";
 
-// Static chrome only: each page checks requireAdmin() inside its own Suspense
-// boundary, so the layout never blocks on the session.
+// Static chrome only: each page checks requireStaff()/requireAdmin() inside its
+// own Suspense boundary, so the layout never blocks on the session.
 export default function AdminLayout({ children }: LayoutProps<"/admin">) {
   return (
     <div className="flex flex-1 flex-col bg-muted/40">

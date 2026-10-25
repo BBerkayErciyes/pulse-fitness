@@ -5,6 +5,7 @@
 // /api/access/validate and the hardware endpoint /api/gate/verify through
 // every scenario, then deletes everything it made.
 import { randomUUID } from "node:crypto";
+import { readFileSync } from "node:fs";
 import { createClient } from "@supabase/supabase-js";
 import { config } from "dotenv";
 import { SignJWT } from "jose";
@@ -69,6 +70,11 @@ async function gateVerify({ json, text, key = gateKey, header = "bearer", gateId
   return { status: res.status, ...(await res.json().catch(() => ({}))) };
 }
 
+// QR generation requires the current legal consents (Phase 12). Versions are
+// read from the source of truth so this script never drifts from the app.
+const LEGAL_DOCS = [...readFileSync(new URL("../src/lib/legal/documents.ts", import.meta.url), "utf8")
+  .matchAll(/id: "([^"]+)",[\s\S]*?version: "([^"]+)"/g)].map(([, id, version]) => ({ id, version }));
+
 async function setSubscription(userId, status) {
   await sql`delete from subscriptions where user_id = ${userId}`;
   if (!status) return;
@@ -92,6 +98,9 @@ try {
   });
   if (createError) throw createError;
   userId = created.user.id;
+  for (const doc of LEGAL_DOCS) {
+    await sql`insert into user_consents (user_id, document, version) values (${userId}, ${doc.id}, ${doc.version})`;
+  }
 
   const { data: signIn, error: signInError } = await anon.auth.signInWithPassword({ email, password });
   if (signInError) throw signInError;

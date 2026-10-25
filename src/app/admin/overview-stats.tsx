@@ -2,12 +2,12 @@ import { AlertTriangle, CheckCircle2, ScanLine, Users, XCircle } from "lucide-re
 import type { LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
-import { requireAdmin } from "@/lib/admin/auth";
+import { requireStaff } from "@/lib/admin/auth";
 import { getAdminOverview } from "@/lib/admin/queries";
 import { cn } from "@/lib/utils";
 
 export async function OverviewStats() {
-  await requireAdmin();
+  await requireStaff();
   const { totalMembers, statusCounts, todayGranted, todayDenied } = await getAdminOverview();
 
   return (

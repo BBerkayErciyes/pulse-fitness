@@ -11,14 +11,17 @@ INSERT INTO auth.users (id, email, aud, role, raw_user_meta_data) VALUES
   ('00000000-0000-0000-0000-00000000000b', 'bob@test.local', 'authenticated', 'authenticated',
    '{"first_name":"Bob","last_name":"B"}'),
   ('00000000-0000-0000-0000-00000000000c', 'admin@test.local', 'authenticated', 'authenticated',
-   '{"first_name":"Ada","last_name":"Admin"}');
+   '{"first_name":"Ada","last_name":"Admin"}'),
+  ('00000000-0000-0000-0000-00000000000d', 'staff@test.local', 'authenticated', 'authenticated',
+   '{"first_name":"Sena","last_name":"Staff"}');
 
 DO $$
 BEGIN
   IF (SELECT count(*) FROM public.users WHERE id IN (
         '00000000-0000-0000-0000-00000000000a',
         '00000000-0000-0000-0000-00000000000b',
-        '00000000-0000-0000-0000-00000000000c')) <> 3 THEN
+        '00000000-0000-0000-0000-00000000000c',
+        '00000000-0000-0000-0000-00000000000d')) <> 4 THEN
     RAISE EXCEPTION 'trigger: profile rows were not created';
   END IF;
   IF (SELECT first_name || '|' || phone || '|' || role FROM public.users
@@ -28,6 +31,11 @@ BEGIN
 END $$;
 
 UPDATE public.users SET role = 'admin' WHERE id = '00000000-0000-0000-0000-00000000000c';
+UPDATE public.users SET role = 'staff' WHERE id = '00000000-0000-0000-0000-00000000000d';
+
+INSERT INTO public.user_consents (user_id, document, version) VALUES
+  ('00000000-0000-0000-0000-00000000000a', 'kvkk', 'test'),
+  ('00000000-0000-0000-0000-00000000000b', 'kvkk', 'test');
 
 INSERT INTO public.subscriptions (user_id, stripe_subscription_id, plan_id, current_period_start, current_period_end) VALUES
   ('00000000-0000-0000-0000-00000000000a', 'sub_test_a', 'plan_basic', now(), now() + interval '1 month'),
@@ -76,6 +84,22 @@ BEGIN
     RAISE EXCEPTION 'member sees other access logs';
   END IF;
 
+  IF (SELECT count(*) FROM public.user_consents) <> 1 THEN
+    RAISE EXCEPTION 'member sees other users'' consents';
+  END IF;
+  BEGIN
+    INSERT INTO public.user_consents (user_id, document, version) VALUES ('00000000-0000-0000-0000-00000000000a', 'kvkk', 'forged');
+    RAISE EXCEPTION 'member can write consents directly';
+  EXCEPTION WHEN insufficient_privilege THEN NULL;
+  END;
+  BEGIN
+    PERFORM 1 FROM public.subscription_reminders;
+    RAISE EXCEPTION 'member can read subscription_reminders';
+  EXCEPTION WHEN insufficient_privilege THEN NULL;
+  END;
+  IF (SELECT public.is_staff()) THEN
+    RAISE EXCEPTION 'is_staff() true for a member';
+  END IF;
   BEGIN
     PERFORM * FROM public.admin_access_daily(7);
     RAISE EXCEPTION 'member can call admin_access_daily';
@@ -105,7 +129,7 @@ SELECT set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000
 
 DO $$
 BEGIN
-  IF (SELECT count(*) FROM public.users WHERE id::text LIKE '00000000-0000-0000-0000-00000000000_') <> 3 THEN
+  IF (SELECT count(*) FROM public.users WHERE id::text LIKE '00000000-0000-0000-0000-00000000000_') <> 4 THEN
     RAISE EXCEPTION 'admin cannot see all users';
   END IF;
   IF (SELECT count(*) FROM public.subscriptions WHERE user_id::text LIKE '00000000-0000-0000-0000-00000000000_') <> 2 THEN
@@ -132,6 +156,55 @@ BEGIN
   IF (SELECT active FROM public.admin_live_plan_counts() WHERE plan_id = 'plan_basic') <> 2 THEN
     RAISE EXCEPTION 'admin_live_plan_counts wrong for plan_basic';
   END IF;
+END $$;
+
+-- ---- As staff ----
+SELECT set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-00000000000d","role":"authenticated"}', true);
+
+DO $$
+DECLARE n int;
+BEGIN
+  IF NOT (SELECT public.is_staff()) OR (SELECT public.is_admin()) THEN
+    RAISE EXCEPTION 'staff: is_staff() must be true and is_admin() false';
+  END IF;
+  IF (SELECT count(*) FROM public.users WHERE id::text LIKE '00000000-0000-0000-0000-00000000000_') <> 4 THEN
+    RAISE EXCEPTION 'staff cannot see all users';
+  END IF;
+  IF (SELECT count(*) FROM public.subscriptions WHERE user_id::text LIKE '00000000-0000-0000-0000-00000000000_') <> 2 THEN
+    RAISE EXCEPTION 'staff cannot see subscription status';
+  END IF;
+  IF (SELECT count(*) FROM public.access_logs WHERE user_id::text LIKE '00000000-0000-0000-0000-00000000000_') <> 2 THEN
+    RAISE EXCEPTION 'staff cannot see access logs';
+  END IF;
+  IF (SELECT count(*) FROM public.admin_access_daily(7)) <> 7 THEN
+    RAISE EXCEPTION 'staff cannot see daily gate traffic';
+  END IF;
+
+  -- Finance stays admin-only.
+  BEGIN
+    PERFORM * FROM public.admin_live_plan_counts();
+    RAISE EXCEPTION 'staff can read revenue data (admin_live_plan_counts)';
+  EXCEPTION WHEN insufficient_privilege THEN NULL;
+  END;
+  -- No writes: subscriptions, logs, roles.
+  BEGIN
+    UPDATE public.subscriptions SET status = 'canceled', canceled_at = now();
+    RAISE EXCEPTION 'staff modified a subscription';
+  EXCEPTION WHEN insufficient_privilege THEN NULL;
+  END;
+  BEGIN
+    INSERT INTO public.access_logs (user_id, granted, reason) VALUES ('00000000-0000-0000-0000-00000000000a', true, 'manual_bypass');
+    RAISE EXCEPTION 'staff wrote access_logs directly (must go through the server)';
+  EXCEPTION WHEN insufficient_privilege THEN NULL;
+  END;
+  BEGIN
+    UPDATE public.users SET role = 'admin' WHERE id = '00000000-0000-0000-0000-00000000000d';
+    RAISE EXCEPTION 'staff escalated own role';
+  EXCEPTION WHEN insufficient_privilege THEN NULL;
+  END;
+  UPDATE public.users SET first_name = 'hacked' WHERE id = '00000000-0000-0000-0000-00000000000a';
+  GET DIAGNOSTICS n = ROW_COUNT;
+  IF n <> 0 THEN RAISE EXCEPTION 'staff edited a member profile'; END IF;
 END $$;
 
 -- ---- As anon ----

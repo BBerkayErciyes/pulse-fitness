@@ -1,10 +1,11 @@
-import { AlertTriangle, ArrowRight, CalendarDays, CreditCard } from "lucide-react";
+import { AlertTriangle, ArrowRight, CalendarDays, CreditCard, Snowflake } from "lucide-react";
 import Link from "next/link";
 import { StatusBadge } from "@/components/status-badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import type { DashboardSubscription, PlanInfo } from "@/lib/subscriptions/dashboard";
 import { cn } from "@/lib/utils";
+import { FreezeButton, UnfreezeButton } from "./freeze-control";
 import { ManageBillingButton } from "./manage-billing-button";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -25,10 +26,13 @@ export function SubscriptionCard({
   subscription,
   plan,
   now,
+  canSelfFreeze = false,
 }: {
   subscription: DashboardSubscription | null;
   plan: PlanInfo | null;
   now: number;
+  /** Yearly plans include self-service freezing. */
+  canSelfFreeze?: boolean;
 }) {
   if (!subscription || !plan) {
     return (
@@ -49,7 +53,7 @@ export function SubscriptionCard({
     );
   }
 
-  const { status, currentPeriodStart, currentPeriodEnd, cancelAtPeriodEnd } = subscription;
+  const { status, currentPeriodStart, currentPeriodEnd, cancelAtPeriodEnd, pauseResumesAt } = subscription;
   const { percent, daysLeft } = periodProgress(currentPeriodStart, currentPeriodEnd, now);
   const isLive = status !== "canceled";
 
@@ -74,6 +78,30 @@ export function SubscriptionCard({
               Son ödemen alınamadı. Salona girişin şimdilik açık; kesinti olmaması için aşağıdaki
               &ldquo;Üyeliği Yönet&rdquo; butonundan ödeme yöntemini güncelle.
             </p>
+          </div>
+        )}
+
+        {status === "paused" && (
+          <div className="flex gap-3 rounded-lg bg-muted p-3 text-sm">
+            <Snowflake className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+            <div className="space-y-3">
+              <p>
+                Üyeliğin{" "}
+                {pauseResumesAt ? (
+                  <>
+                    <span className="font-medium">{formatDate(pauseResumesAt)}</span> tarihine kadar
+                  </>
+                ) : (
+                  "şimdilik"
+                )}{" "}
+                donduruldu. Bu sürede ücret alınmaz ve QR ile giriş yapılamaz.
+              </p>
+              {canSelfFreeze ? (
+                <UnfreezeButton />
+              ) : (
+                <p className="text-muted-foreground">Dondurmayı kaldırmak için salon görevlisine başvur.</p>
+              )}
+            </div>
           </div>
         )}
 
@@ -115,6 +143,13 @@ export function SubscriptionCard({
           <p className="text-sm text-muted-foreground">
             Üyeliğin {formatDate(currentPeriodEnd)} tarihinde sona erecek ve yenilenmeyecek.
           </p>
+        )}
+
+        {canSelfFreeze && status === "active" && !cancelAtPeriodEnd && (
+          <div className="flex flex-col gap-2 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-muted-foreground">Tatile mi çıkıyorsun? Yıllık paketinle üyeliğini dondurabilirsin.</p>
+            <FreezeButton />
+          </div>
         )}
 
         {isLive && (

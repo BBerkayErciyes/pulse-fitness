@@ -13,6 +13,9 @@ export const accessLogs = pgTable(
     gateId: text("gate_id"),
     granted: boolean("granted").notNull(),
     reason: text("reason"),
+    // Set for entries recorded by staff (reason = 'manual_bypass').
+    actorId: uuid("actor_id").references(() => users.id, { onDelete: "set null" }),
+    note: text("note"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [

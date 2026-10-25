@@ -14,7 +14,8 @@
     "db:test-rls": "node scripts/run-sql.mjs scripts/test-rls.sql",
     "simulate:gate": "node scripts/simulate-gate.mjs",
     "auth:configure": "node scripts/configure-supabase-auth.mjs",
-    "admin:set-role": "node scripts/set-role.mjs"
+    "admin:set-role": "node scripts/set-role.mjs",
+    "reminders:setup": "node scripts/setup-reminders.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",

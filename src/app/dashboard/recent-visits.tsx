@@ -33,7 +33,9 @@ export function RecentVisits({ visits }: { visits: MemberDashboard["recentVisits
                 )}
                 <span className="flex-1">
                   {visit.granted
-                    ? "Giriş yapıldı"
+                    ? visit.reason === "manual_bypass"
+                      ? "Görevli tarafından giriş"
+                      : "Giriş yapıldı"
                     : (visit.reason && ACCESS_REASON_LABELS[visit.reason]) ?? "Reddedildi"}
                 </span>
                 <time className="text-xs text-muted-foreground tabular-nums" dateTime={visit.createdAt.toISOString()}>

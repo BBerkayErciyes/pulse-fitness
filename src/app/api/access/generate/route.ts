@@ -1,5 +1,6 @@
 import { checkAccessEligibility } from "@/lib/access/eligibility";
 import { ACCESS_TOKEN_TTL_SECONDS, issueAccessToken } from "@/lib/access/token";
+import { hasAllConsents } from "@/lib/legal/consents";
 import { getAuthenticatedUserId } from "@/lib/supabase/server";
 
 const NO_STORE = { "Cache-Control": "no-store" };
@@ -8,6 +9,11 @@ export async function POST(request: Request) {
   const userId = await getAuthenticatedUserId(request);
   if (!userId) {
     return Response.json({ error: "unauthorized" }, { status: 401, headers: NO_STORE });
+  }
+
+  // The health declaration must be on file before entering the gym.
+  if (!(await hasAllConsents(userId))) {
+    return Response.json({ error: "consents_required" }, { status: 403, headers: NO_STORE });
   }
 
   const eligibility = await checkAccessEligibility(userId);

@@ -24,6 +24,9 @@ export type GateDecision =
  *
  *  1. Verify the QR JWT (signature, issuer/audience, 30 s expiry).
  *  2. Re-check the member's subscription in the database at this instant.
+ *     Only active and past_due (grace) may enter. A frozen membership
+ *     (Stripe pause_collection, synced as status "paused") is refused with
+ *     "subscription_paused", even if its QR was issued before the freeze.
  *  3. Grant at most once per token: the partial unique index on
  *     access_logs(token_id) WHERE granted rejects a second grant, so a
  *     screenshot of the QR cannot let a second person in within the TTL.

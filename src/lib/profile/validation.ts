@@ -1,4 +1,5 @@
 export const NAME_MAX_LENGTH = 50;
+export const PASSWORD_MIN_LENGTH = 8;
 
 export interface ProfileValues {
   firstName: string;

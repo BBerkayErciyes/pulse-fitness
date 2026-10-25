@@ -57,6 +57,20 @@
       "when": 1792966527726,
       "tag": "0007_admin_analytics_rpc",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1792968815177,
+      "tag": "0008_staff_bypass_freeze_consents",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1792968818711,
+      "tag": "0009_staff_rls_reminders_cron",
+      "breakpoints": true
     }
   ]
 }

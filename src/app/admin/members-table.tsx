@@ -3,13 +3,14 @@ import Link from "next/link";
 import { StatusBadge } from "@/components/status-badge";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
+import type { PanelRole } from "@/lib/admin/auth";
 import type { AdminMemberRow } from "@/lib/admin/queries";
 import { getPlanInfo } from "@/lib/subscriptions/dashboard";
 import { cn } from "@/lib/utils";
 import { formatDate, formatDateTime, fullName } from "./format";
 import { MemberActions } from "./member-actions";
 
-export async function MembersTable({ rows }: { rows: AdminMemberRow[] }) {
+export async function MembersTable({ rows, viewerRole }: { rows: AdminMemberRow[]; viewerRole: PanelRole }) {
   if (rows.length === 0) {
     return <p className="rounded-lg bg-muted p-6 text-center text-sm text-muted-foreground">Üye bulunamadı.</p>;
   }
@@ -20,7 +21,7 @@ export async function MembersTable({ rows }: { rows: AdminMemberRow[] }) {
 
   return (
     <div className="relative -mx-4 overflow-x-auto px-4">
-      <table className="w-full min-w-[64rem] text-left text-sm">
+      <table className="w-full min-w-[72rem] text-left text-sm">
         <thead className="border-b text-xs text-muted-foreground">
           <tr>
             <th scope="col" className="py-2 pr-4 font-medium">Üye</th>
@@ -57,6 +58,11 @@ export async function MembersTable({ rows }: { rows: AdminMemberRow[] }) {
                     {m.cancelAtPeriodEnd && m.status !== "canceled" && (
                       <p className="text-xs text-muted-foreground">Dönem sonunda bitecek</p>
                     )}
+                    {m.status === "paused" && (
+                      <p className="text-xs text-muted-foreground">
+                        {m.pauseResumesAt ? `${formatDate(m.pauseResumesAt)} tarihine kadar` : "Süresiz"}
+                      </p>
+                    )}
                   </div>
                 ) : (
                   <span className="text-xs text-muted-foreground">Üyelik yok</span>
@@ -74,13 +80,14 @@ export async function MembersTable({ rows }: { rows: AdminMemberRow[] }) {
               <td className="py-3 pr-4 tabular-nums text-muted-foreground">{formatDate(m.joinedAt)}</td>
               <td className="py-3">
                 <div className="flex items-start justify-end gap-1">
-                  {m.subscriptionId && m.status && m.status !== "canceled" && (
-                    <MemberActions
-                      subscriptionId={m.subscriptionId}
-                      memberName={fullName(m.firstName, m.lastName)}
-                      cancelAtPeriodEnd={m.cancelAtPeriodEnd ?? false}
-                    />
-                  )}
+                  <MemberActions
+                    viewerRole={viewerRole}
+                    userId={m.id}
+                    memberName={fullName(m.firstName, m.lastName)}
+                    subscriptionId={m.subscriptionId}
+                    status={m.status}
+                    cancelAtPeriodEnd={m.cancelAtPeriodEnd ?? false}
+                  />
                   <Link
                     href={`/admin/access-logs?member=${m.id}`}
                     className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "text-muted-foreground")}

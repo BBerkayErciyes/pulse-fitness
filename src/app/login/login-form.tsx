@@ -9,16 +9,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
-type Mode = "sign-in" | "sign-up";
-
 export function LoginForm({ next, linkInvalid = false }: { next: string; linkInvalid?: boolean }) {
   const router = useRouter();
-  const [mode, setMode] = useState<Mode>("sign-in");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(
     linkInvalid ? "Doğrulama bağlantısı geçersiz ya da süresi dolmuş. Giriş yapmayı dene." : null,
   );
-  const [notice, setNotice] = useState<string | null>(null);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -28,70 +24,24 @@ export function LoginForm({ next, linkInvalid = false }: { next: string; linkInv
 
     setPending(true);
     setError(null);
-    setNotice(null);
-    const supabase = createSupabaseBrowserClient();
-
-    if (mode === "sign-in") {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) {
-        setError("E-posta veya şifre hatalı.");
-        setPending(false);
-        return;
-      }
-      router.replace(next);
-      router.refresh();
-      return;
-    }
-
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        // Read by the handle_new_user trigger to fill public.users.
-        data: { first_name: String(form.get("firstName")), last_name: String(form.get("lastName")) },
-        // Used by Supabase's default email template; our template links to
-        // /auth/confirm with a token_hash instead (see supabase/templates).
-        emailRedirectTo: `${window.location.origin}/auth/confirm?next=/dashboard`,
-      },
-    });
-    setPending(false);
+    const { error } = await createSupabaseBrowserClient().auth.signInWithPassword({ email, password });
     if (error) {
-      setError(error.message);
+      setError("E-posta veya şifre hatalı.");
+      setPending(false);
       return;
     }
-    if (data.session) {
-      router.replace(next);
-      router.refresh();
-    } else {
-      setNotice("Kaydın alındı. Hesabını doğrulamak için e-postanı kontrol et.");
-      setMode("sign-in");
-    }
+    router.replace(next);
+    router.refresh();
   }
-
-  const isSignUp = mode === "sign-up";
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-xl">{isSignUp ? "Üye ol" : "Tekrar hoş geldin"}</CardTitle>
-        <CardDescription>
-          {isSignUp ? "Birkaç bilgiyle hesabını oluştur." : "Hesabına giriş yap."}
-        </CardDescription>
+        <CardTitle className="text-xl">Tekrar hoş geldin</CardTitle>
+        <CardDescription>Hesabına giriş yap.</CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={onSubmit} className="space-y-4">
-          {isSignUp && (
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <Label htmlFor="firstName">Ad</Label>
-                <Input id="firstName" name="firstName" autoComplete="given-name" required />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="lastName">Soyad</Label>
-                <Input id="lastName" name="lastName" autoComplete="family-name" required />
-              </div>
-            </div>
-          )}
           <div className="space-y-2">
             <Label htmlFor="email">E-posta</Label>
             <Input id="email" name="email" type="email" autoComplete="email" inputMode="email" required />
@@ -99,21 +49,18 @@ export function LoginForm({ next, linkInvalid = false }: { next: string; linkInv
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <Label htmlFor="password">Şifre</Label>
-              {!isSignUp && (
-                <Link
-                  href="/forgot-password"
-                  className="text-sm text-muted-foreground underline-offset-4 hover:text-primary hover:underline"
-                >
-                  Şifremi Unuttum
-                </Link>
-              )}
+              <Link
+                href="/forgot-password"
+                className="text-sm text-muted-foreground underline-offset-4 hover:text-primary hover:underline"
+              >
+                Şifremi Unuttum
+              </Link>
             </div>
             <Input
               id="password"
               name="password"
               type="password"
-              autoComplete={isSignUp ? "new-password" : "current-password"}
-              minLength={isSignUp ? 8 : undefined}
+              autoComplete="current-password"
               required
             />
           </div>
@@ -123,29 +70,17 @@ export function LoginForm({ next, linkInvalid = false }: { next: string; linkInv
               {error}
             </p>
           )}
-          {notice && (
-            <p role="status" className="text-sm text-success">
-              {notice}
-            </p>
-          )}
 
           <Button type="submit" size="lg" className="w-full" disabled={pending}>
-            {pending ? "Lütfen bekle…" : isSignUp ? "Hesap oluştur" : "Giriş yap"}
+            {pending ? "Lütfen bekle…" : "Giriş yap"}
           </Button>
         </form>
 
         <p className="mt-6 text-center text-sm text-muted-foreground">
-          {isSignUp ? "Zaten üye misin?" : "Hesabın yok mu?"}{" "}
-          <button
-            type="button"
-            className="font-medium text-primary underline-offset-4 hover:underline"
-            onClick={() => {
-              setMode(isSignUp ? "sign-in" : "sign-up");
-              setError(null);
-            }}
-          >
-            {isSignUp ? "Giriş yap" : "Üye ol"}
-          </button>
+          Hesabın yok mu?{" "}
+          <Link href="/signup" className="font-medium text-primary underline-offset-4 hover:underline">
+            Üye ol
+          </Link>
         </p>
       </CardContent>
     </Card>
